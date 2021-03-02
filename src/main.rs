@@ -1,15 +1,23 @@
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum DispMode {
+    Decimal,
+    Ascii,
+}
+
 struct Mem {
     neg: Vec<i128>,
     pos: Vec<i128>,
     ptr: i128,
+    display_mode: DispMode,
 }
 
 impl Mem {
-    fn new() -> Mem {
+    fn new(display_mode: DispMode) -> Mem {
         Mem {
             neg: Vec::new(),
             pos: vec![0],
             ptr: 0,
+            display_mode,
         }
     }
 
@@ -33,12 +41,29 @@ impl Mem {
     }
 }
 
+fn display_change(code: &str) -> Option<DispMode> {
+    match code {
+        "display=decimal" => Some(DispMode::Decimal),
+        "display=ascii" => Some(DispMode::Ascii),
+        _ => None,
+    }
+}
+
 pub fn main() {
+    let mut display_mode = DispMode::Decimal;
     loop {
         cls();
         let code = input("Enter code: ");
-        parse(code, &mut Mem::new());
-        let _ = input("Press enter to continue...");
+        if let Some(mode) = display_change(&code) {
+            display_mode = mode;
+        } else {
+            parse(code, &mut Mem::new(display_mode));
+        }
+        if display_mode == DispMode::Decimal {
+            let _ = input("Press enter to continue...");
+        } else {
+            let _ = input("\nPress enter to continue...");
+        }
     }
 }
 
@@ -72,7 +97,13 @@ fn parse(code: String, mem: &mut Mem) {
                 '<' => mem.ptr_plus(-1),
                 '+' => *mem.val() += 1,
                 '-' => *mem.val() -= 1,
-                '.' => println!(" {}", mem.val()),
+                '.' => {
+                    if mem.display_mode == DispMode::Decimal {
+                        println!("{}", mem.val());
+                    } else {
+                        print!("{}", *mem.val() as u8 as char);
+                    }
+                }
                 ',' => *mem.val() = user_in(),
                 _ => {}
             }
